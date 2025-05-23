@@ -1,7 +1,7 @@
 git-changed-cd() {
   # Only show debug output if DEBUG is set
   git-changed-cd-debug() {
-    [[ -n "$DEBUG" ]] && echo "DEBUG[git-changed-cd]: $1" >&2
+    [[ -n $DEBUG ]] && echo "DEBUG[git-changed-cd]: $1" >&2
   }
 
   git-changed-cd-debug "Starting git-changed-cd function"
@@ -44,7 +44,7 @@ $staged_files"
 $untracked_files"
   git-changed-cd-debug "Untracked files count: $(echo "$untracked_files" | grep -c '^')"
   git-changed-cd-debug "Sample untracked files (first 5):"
-  [[ -n "$DEBUG" ]] && echo "$untracked_files" | head -n 5 | while read -r line; do git-changed-cd-debug " - $line"; done
+  [[ -n $DEBUG ]] && echo "$untracked_files" | head -n 5 | while read -r line; do git-changed-cd-debug " - $line"; done
 
   # Combine, sort unique, and filter empty lines
   git-changed-cd-debug "Combining all changed files..."
@@ -55,7 +55,7 @@ $untracked_files"
 $all_files"
   git-changed-cd-debug "Total unique changed files: $(echo "$all_files" | grep -c '^')"
   git-changed-cd-debug "Sample changed files (first 5):"
-  [[ -n "$DEBUG" ]] && echo "$all_files" | head -n 5 | while read -r line; do git-changed-cd-debug " - $line"; done
+  [[ -n $DEBUG ]] && echo "$all_files" | head -n 5 | while read -r line; do git-changed-cd-debug " - $line"; done
 
   if [[ -z $all_files ]]; then
     git-changed-cd-debug "No changed files detected"
@@ -122,7 +122,7 @@ $all_files"
   unset IFS
   git-changed-cd-debug "Found ${#unique_relevant_directories[@]} unique relevant directories"
   git-changed-cd-debug "All relevant directories:"
-  [[ -n "$DEBUG" ]] && printf "%s
+  [[ -n $DEBUG ]] && printf "%s
 " "${unique_relevant_directories[@]}" | while read -r line; do git-changed-cd-debug " - $line"; done
 
   if [[ ${#unique_relevant_directories[@]} -eq 0 ]]; then
@@ -177,7 +177,7 @@ $all_files"
     # then cd to the target directory using its absolute path.
     local target_dir_abs="$repo_root/$selected_dir_rel"
     git-changed-cd-debug "Initial target path: '$target_dir_abs'"
-    
+
     # 'cd' handles '.' correctly, but canonicalizing is cleaner
     if [[ $selected_dir_rel == "." ]]; then
       target_dir_abs="$repo_root"
