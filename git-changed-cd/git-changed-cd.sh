@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
 # Copyright © 2025 Imre Toth <tothimre@gmail.com> - Proprietary Software. See LICENSE file for terms.
+
 git-changed-cd() {
   # Only show debug output if DEBUG is set
   git-changed-cd-debug() {
