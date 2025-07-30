@@ -2,123 +2,198 @@
 # Copyright © 2025 Imre Toth <tothimre@gmail.com> - Proprietary Software. See LICENSE file for terms.
 
 git-changed-cd() {
-  # Only show debug output if DEBUG is set
+  local scan_mode="current"  # current, registered, all
+  
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -h|--help)
+        echo "Usage: git-changed-cd [OPTIONS]"
+        echo ""
+        echo "Navigate to directories with Git changes."
+        echo ""
+        echo "OPTIONS:"
+        echo "  -h, --help                    Show this help message"
+        echo "  --justRegisteredDirectories   Scan only registered repositories"
+        echo "  --all                        Scan current repository and all registered repositories"
+        echo ""
+        echo "ALIASES:"
+        echo "  gcd     - git-changed-cd"
+        echo "  gcdj    - git-changed-cd --justRegisteredDirectories"
+        echo "  gcda    - git-changed-cd --all"
+        return 0
+        ;;
+      --justRegisteredDirectories)
+        scan_mode="registered"
+        shift
+        ;;
+      --all)
+        scan_mode="all"
+        shift
+        ;;
+      *)
+        echo "Error: Unknown option '$1'" >&2
+        echo "Use 'git-changed-cd --help' for usage information." >&2
+        return 1
+        ;;
+    esac
+  done
 
-  git_changed_cd_debug "Starting git-changed-cd function"
+  git_changed_cd_debug "Starting git-changed-cd function with scan_mode=$scan_mode"
 
-  # Get the root of the Git repository
-  git_changed_cd_debug "Getting repository root..."
-  local repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-  if [[ -z $repo_root ]]; then
-    git_changed_cd_debug "Failed to get repository root - not in a git repo?"
-    echo "Error: Not inside a Git repository." >&2
-    return 1
-  fi
-  git_changed_cd_debug "Repository root: $repo_root"
+  # Determine which repositories to scan
+  local repos_to_scan=()
+  
+  case $scan_mode in
+    "current")
+      # Get current repo root if we're in one
+      local current_repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+      if [[ -z $current_repo_root ]]; then
+        echo "Error: Not inside a Git repository." >&2
+        return 1
+      fi
+      repos_to_scan=("$current_repo_root")
+      git_changed_cd_debug "Scanning current repository: $current_repo_root"
+      ;;
+    "registered")
+      # Initialize registry and get registered repos
+      git_changed_cd_registry_init
+      local registry_count=$(git_changed_cd_registry_count)
+      if [[ $registry_count -eq 0 ]]; then
+        echo "No registered repositories found."
+        echo "Use 'git-changed-cd-add-repo <path>' to register repositories."
+        return 0
+      fi
+      
+      while IFS= read -r repo; do
+        repos_to_scan+=("$repo")
+      done < <(git_changed_cd_registry_get_repos)
+      git_changed_cd_debug "Scanning ${#repos_to_scan[@]} registered repositories"
+      ;;
+    "all")
+      # Get current repo if we're in one
+      local current_repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+      if [[ -n $current_repo_root ]]; then
+        repos_to_scan=("$current_repo_root")
+        git_changed_cd_debug "Added current repository: $current_repo_root"
+      fi
+      
+      # Add registered repos (avoid duplicates)
+      git_changed_cd_registry_init
+      while IFS= read -r repo; do
+        local already_added=false
+        for existing_repo in "${repos_to_scan[@]}"; do
+          if [[ "$existing_repo" == "$repo" ]]; then
+            already_added=true
+            break
+          fi
+        done
+        if [[ $already_added == false ]]; then
+          repos_to_scan+=("$repo")
+          git_changed_cd_debug "Added registered repository: $repo"
+        fi
+      done < <(git_changed_cd_registry_get_repos)
+      
+      if [[ ${#repos_to_scan[@]} -eq 0 ]]; then
+        echo "Error: Not inside a Git repository and no registered repositories found." >&2
+        echo "Use 'git-changed-cd-add-repo <path>' to register repositories." >&2
+        return 1
+      fi
+      git_changed_cd_debug "Scanning ${#repos_to_scan[@]} total repositories (current + registered)"
+      ;;
+  esac
 
-  # Use pushd/popd for reliable directory navigation within the function
-  git_changed_cd_debug "Attempting to pushd to repo root..."
-  pushd "$repo_root" >/dev/null || {
-    git_changed_cd_debug "Failed to pushd to repo root: $repo_root"
-    echo "Error: Failed to navigate to repository root '$repo_root'." >&2
-    return 1
-  }
-  git_changed_cd_debug "Successfully changed to repository root directory"
+  # Collect all directories with changes from all repositories
+  local all_relevant_dirs=()
+  local repo_dir_mapping=()  # Format: "dir_index:repo_path"
+  
+  for repo_root in "${repos_to_scan[@]}"; do
+    git_changed_cd_debug "Processing repository: $repo_root"
+    
+    # Skip if repo doesn't exist or isn't a git repo
+    if [[ ! -d "$repo_root" ]] || ! git -C "$repo_root" rev-parse --git-dir >/dev/null 2>&1; then
+      git_changed_cd_debug "Skipping invalid repository: $repo_root"
+      continue
+    fi
+    
+    # Get changes for this repository
+    local repo_dirs
+    repo_dirs=$(git_changed_cd_get_repo_directories "$repo_root")
+    if [[ $? -ne 0 ]] || [[ -z "$repo_dirs" ]]; then
+      git_changed_cd_debug "No changes found in repository: $repo_root"
+      continue
+    fi
+    
+    # Add directories to the global list with repo mapping
+    while IFS= read -r dir; do
+      local full_dir_path
+      if [[ "$dir" == "." ]]; then
+        full_dir_path="$repo_root"
+      else
+        full_dir_path="$repo_root/$dir"
+      fi
+      
+      all_relevant_dirs+=("$full_dir_path")
+      repo_dir_mapping+=("$((${#all_relevant_dirs[@]} - 1)):$repo_root")
+      git_changed_cd_debug "Added directory: $full_dir_path (from repo: $repo_root)"
+    done <<<"$repo_dirs"
+  done
 
-  # Get lists of files: unstaged, staged, and untracked (including not-yet-added)
-  git_changed_cd_debug "Getting unstaged files..."
-  local unstaged_files=$(git diff --name-only HEAD 2>/dev/null)
-  git_changed_cd_debug "Unstaged files:
-$unstaged_files"
-  git_changed_cd_debug "Unstaged files count: $(echo "$unstaged_files" | grep -c '^')"
-
-  git_changed_cd_debug "Getting staged files..."
-  local staged_files=$(git diff --name-only --cached 2>/dev/null)
-  git_changed_cd_debug "Staged files:
-$staged_files"
-  git_changed_cd_debug "Staged files count: $(echo "$staged_files" | grep -c '^')"
-
-  git_changed_cd_debug "Getting untracked files (including not-yet-added)..."
-  local untracked_files=$(git ls-files --others --exclude-standard 2>/dev/null)
-  git_changed_cd_debug "Raw untracked files output:
-$untracked_files"
-  git_changed_cd_debug "Untracked files count: $(echo "$untracked_files" | grep -c '^')"
-  git_changed_cd_debug "Sample untracked files (first 5):"
-  [[ -n $DEBUG ]] && echo "$untracked_files" | head -n 5 | while read -r line; do git_changed_cd_debug " - $line"; done
-
-  # Combine, sort unique, and filter empty lines
-  git_changed_cd_debug "Combining all changed files..."
-  local all_files=$(printf "%s
-%s
-%s" "$unstaged_files" "$staged_files" "$untracked_files" | grep -v '^[[:space:]]*$' | sort -u)
-  git_changed_cd_debug "Combined files:
-$all_files"
-  git_changed_cd_debug "Total unique changed files: $(echo "$all_files" | grep -c '^')"
-  git_changed_cd_debug "Sample changed files (first 5):"
-  [[ -n $DEBUG ]] && echo "$all_files" | head -n 5 | while read -r line; do git_changed_cd_debug " - $line"; done
-
-  if [[ -z $all_files ]]; then
-    git_changed_cd_debug "No changed files detected"
-    echo "No changes detected (staged, unstaged, or untracked)."
-    popd >/dev/null # Return to original directory
+  # Check if we found any directories
+  if [[ ${#all_relevant_dirs[@]} -eq 0 ]]; then
+    case $scan_mode in
+      "current")
+        echo "No changes detected (staged, unstaged, or untracked)."
+        ;;
+      "registered")
+        echo "No changes detected in any registered repositories."
+        ;;
+      "all")
+        echo "No changes detected in current or registered repositories."
+        ;;
+    esac
     return 0
   fi
 
-  # Collect all directories containing changes (immediate parents)
-  git_changed_cd_debug "Collecting immediate parent directories..."
-  local immediate_dirs=()
-  while IFS= read -r file; do
-    local dir
-    dir=$(dirname "$file")
-    immediate_dirs+=("$dir")
-    git_changed_cd_debug "File: $file → Parent dir: $dir"
-  done <<<"$all_files"
-  git_changed_cd_debug "Found ${#immediate_dirs[@]} immediate directories"
-
-  # Generate the list of all relevant directories, including parents
-  git_changed_cd_debug "Generating all relevant directories..."
-  local all_relevant_dirs=()
-  local seen_dirs="" # Use a string for quick check (less efficient for huge lists but fine here)
-
-  # Function to add a directory and its parents to the list if not seen
-
-  # Process each immediate directory to add it and its parents
-  git_changed_cd_debug "Processing immediate directories..."
-  for dir in "${immediate_dirs[@]}"; do
-    git_changed_cd_debug "Processing immediate directory: '$dir'"
-    git_changed_cd_add_dir_and_parents "$dir"
-  done
-
-  # Sort the unique list of relevant directories naturally (-V)
-  git_changed_cd_debug "Sorting unique relevant directories..."
-  IFS=$'
-' unique_relevant_directories=($(printf "%s
-" "${all_relevant_dirs[@]}" | sort -uV))
-  unset IFS
-  git_changed_cd_debug "Found ${#unique_relevant_directories[@]} unique relevant directories"
-  git_changed_cd_debug "All relevant directories:"
-  [[ -n $DEBUG ]] && printf "%s
-" "${unique_relevant_directories[@]}" | while read -r line; do git_changed_cd_debug " - $line"; done
-
-  if [[ ${#unique_relevant_directories[@]} -eq 0 ]]; then
-    git_changed_cd_debug "No directories found - unexpected state"
-    echo "No directories found containing changes (unexpected state)." >&2
-    popd >/dev/null
-    return 1
-  fi
-
   # Display directories with numbers
-  git_changed_cd_debug "Displaying directory selection menu..."
+  git_changed_cd_debug "Displaying directory selection menu with ${#all_relevant_dirs[@]} directories"
   echo "Directories with changes:"
+  
   local i
-  for i in "${!unique_relevant_directories[@]}"; do
-    local display_dir="${unique_relevant_directories[i]}"
-    # Display '.' as '<repo root>' for better readability
-    if [[ $display_dir == "." ]]; then
-      display_dir="<repo root>"
+  for i in "${!all_relevant_dirs[@]}"; do
+    local display_dir="${all_relevant_dirs[i]}"
+    
+    # Find which repo this directory belongs to
+    local repo_for_dir=""
+    for mapping in "${repo_dir_mapping[@]}"; do
+      local dir_index="${mapping%%:*}"
+      local repo_path="${mapping#*:}"
+      if [[ "$dir_index" == "$i" ]]; then
+        repo_for_dir="$repo_path"
+        break
+      fi
+    done
+    
+    # Format display string
+    if [[ "$scan_mode" != "current" ]]; then
+      # Show repo name for multi-repo modes
+      local repo_name=$(basename "$repo_for_dir")
+      if [[ "$display_dir" == "$repo_for_dir" ]]; then
+        display_dir="[$repo_name] <repo root>"
+      else
+        local rel_dir="${display_dir#$repo_for_dir/}"
+        display_dir="[$repo_name] $rel_dir"
+      fi
+    else
+      # Single repo mode - show as before
+      if [[ "$display_dir" == "$repo_for_dir" ]]; then
+        display_dir="<repo root>"
+      else
+        display_dir="${display_dir#$repo_for_dir/}"
+      fi
     fi
-    printf "%d: %s
-" "$((i + 1))" "$display_dir"
+    
+    printf "%d: %s\n" "$((i + 1))" "$display_dir"
   done
 
   # Prompt user for selection
@@ -131,7 +206,6 @@ $all_files"
   if [[ ! $selection =~ ^[0-9]+$ ]]; then
     git_changed_cd_debug "Invalid input detected (not a number)"
     echo "Invalid input: Not a number." >&2
-    popd >/dev/null # Return to original directory
     return 1
   fi
 
@@ -139,27 +213,13 @@ $all_files"
   if ((selection == 0)); then
     git_changed_cd_debug "User cancelled operation"
     echo "Operation cancelled."
-    popd >/dev/null # Return to original directory
     return 0
   fi
 
   # Validate selection range
-  if ((selection >= 1 && selection <= ${#unique_relevant_directories[@]})); then
-    local selected_dir_rel="${unique_relevant_directories[selection - 1]}" # Path relative to repo_root
-    git_changed_cd_debug "Selected directory (relative): '$selected_dir_rel'"
-
-    # We need to popd *first* to get back to the original directory,
-    # then cd to the target directory using its absolute path.
-    local target_dir_abs
-    if [[ $selected_dir_rel == "." ]]; then
-      target_dir_abs="$repo_root"
-      git_changed_cd_debug "Handling root directory case: '$target_dir_abs'"
-    else
-      target_dir_abs="$repo_root/$selected_dir_rel"
-      git_changed_cd_debug "Computed target path: '$target_dir_abs'"
-    fi
-
-    popd >/dev/null # Return to original directory *before* final cd
+  if ((selection >= 1 && selection <= ${#all_relevant_dirs[@]})); then
+    local target_dir_abs="${all_relevant_dirs[selection - 1]}"
+    git_changed_cd_debug "Selected directory (absolute): '$target_dir_abs'"
 
     if [[ -d $target_dir_abs ]]; then
       git_changed_cd_debug "Changing to target directory: '$target_dir_abs'"
@@ -179,10 +239,11 @@ $all_files"
   else
     git_changed_cd_debug "Selection out of range: $selection"
     echo "Invalid selection number: $selection" >&2
-    popd >/dev/null # Return to original directory
     return 1
   fi
 }
 
-# Define the alias
+# Define the aliases
 alias gcd='git-changed-cd'
+alias gcdj='git-changed-cd --justRegisteredDirectories'
+alias gcda='git-changed-cd --all'

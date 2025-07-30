@@ -11,7 +11,7 @@ git_changed_cd_test_debug_mode() {
   local temp_output=$(mktemp)
   git-changed-cd < <(echo "0") >"$temp_output" 2>&1
   local result=$?
-  if [[ $result -ne 0 ]] || ! grep -F -q "DEBUG[git-changed-cd]: Starting git-changed-cd function" "$temp_output" || ! grep -F -q "DEBUG[git-changed-cd]: Repository root: $temp_dir" "$temp_output" || ! grep -q "Operation cancelled." "$temp_output"; then
+  if [[ $result -ne 0 ]] || ! grep -F -q "DEBUG[git-changed-cd]: Starting git-changed-cd function" "$temp_output" || ! grep -F -q "DEBUG[git-changed-cd]: Scanning current repository: $temp_dir" "$temp_output" || ! grep -q "Operation cancelled." "$temp_output"; then
     echo "❌ ERROR: Expected exit code 0, debug messages, and 'Operation cancelled', got exit code $result"
     cat "$temp_output"
     rm -f "$temp_output"
