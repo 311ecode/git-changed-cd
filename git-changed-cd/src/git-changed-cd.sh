@@ -65,16 +65,26 @@ git-changed-cd() {
         return 0
       fi
       
+      # Get registered repos and sort by distance
+      local -a unsorted_repos=()
+      while IFS= read -r repo; do
+        unsorted_repos+=("$repo")
+      done < <(git_changed_cd_registry_get_repos)
+      
+      # Sort by distance from current directory
       while IFS= read -r repo; do
         repos_to_scan+=("$repo")
-      done < <(git_changed_cd_registry_get_repos)
-      git_changed_cd_debug "Scanning ${#repos_to_scan[@]} registered repositories"
+      done < <(git_changed_cd_sort_repos_by_distance "${unsorted_repos[@]}")
+      
+      git_changed_cd_debug "Scanning ${#repos_to_scan[@]} registered repositories (sorted by distance)"
       ;;
     "all")
       # Get current repo if we're in one
       local current_repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+      local -a all_repos=()
+      
       if [[ -n $current_repo_root ]]; then
-        repos_to_scan=("$current_repo_root")
+        all_repos=("$current_repo_root")
         git_changed_cd_debug "Added current repository: $current_repo_root"
       fi
       
@@ -82,24 +92,30 @@ git-changed-cd() {
       git_changed_cd_registry_init
       while IFS= read -r repo; do
         local already_added=false
-        for existing_repo in "${repos_to_scan[@]}"; do
+        for existing_repo in "${all_repos[@]}"; do
           if [[ "$existing_repo" == "$repo" ]]; then
             already_added=true
             break
           fi
         done
         if [[ $already_added == false ]]; then
-          repos_to_scan+=("$repo")
+          all_repos+=("$repo")
           git_changed_cd_debug "Added registered repository: $repo"
         fi
       done < <(git_changed_cd_registry_get_repos)
       
-      if [[ ${#repos_to_scan[@]} -eq 0 ]]; then
+      if [[ ${#all_repos[@]} -eq 0 ]]; then
         echo "Error: Not inside a Git repository and no registered repositories found." >&2
         echo "Use 'git-changed-cd-add-repo <path>' to register repositories." >&2
         return 1
       fi
-      git_changed_cd_debug "Scanning ${#repos_to_scan[@]} total repositories (current + registered)"
+      
+      # Sort all repos by distance from current directory
+      while IFS= read -r repo; do
+        repos_to_scan+=("$repo")
+      done < <(git_changed_cd_sort_repos_by_distance "${all_repos[@]}")
+      
+      git_changed_cd_debug "Scanning ${#repos_to_scan[@]} total repositories (current + registered, sorted by distance)"
       ;;
   esac
 

@@ -38,6 +38,12 @@ git_changed_cd_test_suite() {
     "git_changed_cd_test_aliases"
     "git_changed_cd_test_help_message"
     "git_changed_cd_test_sequential_numbering"
+    # New multi-repo display and distance ordering tests
+    "git_changed_cd_test_current_repo_display"
+    "git_changed_cd_test_current_vs_registered_display"
+    "git_changed_cd_test_path_distance_calculation"
+    "git_changed_cd_test_distance_ordering"
+    "git_changed_cd_test_all_mode_distance_ordering"
   )
 
   local ignored_tests=() # 🚫 No tests to skip

@@ -39,12 +39,39 @@ gcd -h
 ## Features
 - **Multi-repository support**: Register and navigate across multiple repositories
 - **Flexible scanning modes**: Current repo only, registered repos only, or all combined
+- **Distance-based ordering**: Repositories ordered by proximity to current working directory
 - **Change detection**: Staged, unstaged, and untracked files
 - **Hierarchical structure**: Shows directory hierarchy with parent directories
 - **Sequential numbering**: Consistent numbering across multiple repositories
 - **Repository identification**: Multi-repo modes show repository names in brackets
 - **Graceful error handling**: Handles missing directories and invalid repositories
 - **Debug mode**: Set `DEBUG=1` for detailed logging
+
+## Repository Display Precedence
+
+### Current Mode (`gcd`)
+- Shows only the current Git repository
+- Directories displayed without repository name prefix
+- Example: `src/utils`, `<repo root>`
+
+### Registered Mode (`gcdj`)
+- Shows only registered repositories
+- **Ordered by distance** from current working directory (closest first)
+- Directories displayed with repository name prefix
+- Example: `[closest-repo] src`, `[farther-repo] docs`
+
+### All Mode (`gcda`)
+- Shows current repository + all registered repositories
+- **All repositories ordered by distance** from current working directory
+- All directories displayed with repository name prefix (including current)
+- Example: `[current-repo] src`, `[nearby-repo] tests`, `[distant-repo] docs`
+
+### Distance Calculation
+Distance is calculated as the minimum number of directory traversals needed to reach the target repository from the current working directory:
+- **Parent directory**: Distance 1 (up 1 level)
+- **Child directory**: Distance 1 (down 1 level)
+- **Sibling directory**: Distance 2 (up 1, down 1)
+- **Cousin directory**: Distance varies based on common path depth
 
 ## How It Works
 
@@ -65,12 +92,17 @@ gcd -h
    - Colon-separated format for multiple repositories
    - In-memory storage (not persistent across shell sessions)
 
-2. **Multi-Repo Scanning**:
-   - Processes each repository independently
+2. **Distance-Based Ordering**:
+   - Calculates relative path distance from current working directory to each repository
+   - Sorts repositories by distance (closest first)
+   - Maintains consistent ordering regardless of registration order
+
+3. **Multi-Repo Scanning**:
+   - Processes each repository independently in distance order
    - Combines results with sequential numbering
    - Displays repository names in brackets: `[repo-name] directory`
 
-3. **Navigation**:
+4. **Navigation**:
    - Uses absolute paths for cross-repository navigation
    - Handles edge cases (missing repos, non-git directories)
 
@@ -87,24 +119,39 @@ Enter the number of the directory to cd into (or 0 to cancel): 2
 Changing directory to: /path/to/repo/src/utils
 ```
 
-### Multi-Repository Setup
+### Multi-Repository Setup with Distance Ordering
 ```bash
-$ git-changed-cd-add-repo /home/user/project1
-Added repository: /home/user/project1
+# Current location: /home/user/workspace/current-project
+$ git-changed-cd-add-repo /home/user/workspace/nearby-project
+Added repository: /home/user/workspace/nearby-project
 
-$ git-changed-cd-add-repo /home/user/project2
-Added repository: /home/user/project2
+$ git-changed-cd-add-repo /home/user/projects/distant-project
+Added repository: /home/user/projects/distant-project
 
 $ gcdj
 Directories with changes:
-1: [project1] <repo root>
-2: [project1] src
-3: [project1] tests
-4: [project2] <repo root>
-5: [project2] docs
-6: [project2] examples
-Enter the number of the directory to cd into (or 0 to cancel): 5
-Changing directory to: /home/user/project2/docs
+1: [nearby-project] <repo root>        # Distance: 1 (sibling directory)
+2: [nearby-project] src
+3: [nearby-project] tests
+4: [distant-project] <repo root>       # Distance: 3 (cousin directory)
+5: [distant-project] docs
+6: [distant-project] examples
+Enter the number of the directory to cd into (or 0 to cancel): 1
+Changing directory to: /home/user/workspace/nearby-project
+```
+
+### All Mode with Current Repository
+```bash
+# From /home/user/workspace/current-project
+$ gcda
+Directories with changes:
+1: [current-project] <repo root>       # Distance: 0 (current directory)
+2: [current-project] src
+3: [nearby-project] <repo root>        # Distance: 1 (sibling directory)
+4: [nearby-project] tests
+5: [distant-project] docs              # Distance: 3 (cousin directory)
+Enter the number of the directory to cd into (or 0 to cancel): 3
+Changing directory to: /home/user/workspace/nearby-project
 ```
 
 ### Debug Mode
@@ -113,6 +160,7 @@ $ DEBUG=1 gcd
 DEBUG[git-changed-cd]: Starting git-changed-cd function with scan_mode=current
 DEBUG[git-changed-cd]: Scanning current repository: /path/to/repo
 DEBUG[git-changed-cd]: Processing repository: /path/to/repo
+DEBUG[git-changed-cd]: Path distance calculation: common_length=3, steps_up=0, steps_down=2, total=2
 [...]
 ```
 
@@ -122,8 +170,8 @@ DEBUG[git-changed-cd]: Processing repository: /path/to/repo
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `git-changed-cd` | `gcd` | Navigate to directories with changes (current repo) |
-| `git-changed-cd --justRegisteredDirectories` | `gcdj` | Navigate within registered repositories only |
-| `git-changed-cd --all` | `gcda` | Navigate within current + registered repositories |
+| `git-changed-cd --justRegisteredDirectories` | `gcdj` | Navigate within registered repositories only (distance-ordered) |
+| `git-changed-cd --all` | `gcda` | Navigate within current + registered repositories (distance-ordered) |
 | `git-changed-cd --help` | `gcd -h` | Show help message |
 
 ### Registry Management
@@ -177,6 +225,7 @@ The system is designed to work with existing installations. All functions use pr
 - **No nested repos**: Git repositories within Git repositories are not supported
 - **No submodules**: Submodule support is not included
 - **Path stability**: Assumes users don't move registered repositories
+- **Distance calculation**: Based on directory traversal, not geographic or logical proximity
 
 ## Files Structure
 ```
@@ -187,28 +236,62 @@ src/
 ├── git_changed_cd_debug.sh                    # Debug utilities
 ├── git_changed_cd_add_dir_and_parents.sh      # Directory tree helpers
 ├── git_changed_cd_get_repo_directories.sh     # Single-repo directory scanner
-└── git_changed_cd_registry.sh                 # Registry management functions
+├── git_changed_cd_registry.sh                 # Registry management functions
+└── git_changed_cd_path_distance.sh            # Distance calculation utilities
 
 tests/
 ├── git_changed_cd_test_suite.sh               # Main test suite
 └── subtests/                                  # Individual test files
-    ├── git_changed_cd_test_*.sh               # Original functionality tests
-    ├── git_changed_cd_test_add_repo_*.sh      # Repository addition tests
-    ├── git_changed_cd_test_remove_repo_*.sh   # Repository removal tests
-    └── git_changed_cd_test_*_mode.sh          # Multi-repo navigation tests
+    ├── core/                                  # Original functionality tests
+    │   ├── git_changed_cd_test_*.sh
+    │   └── README.md
+    ├── registry/                              # Registry management tests
+    │   ├── add/git_changed_cd_test_add_repo_*.sh
+    │   ├── remove/git_changed_cd_test_remove_repo_*.sh
+    │   ├── functions/git_changed_cd_test_registry_functions.sh
+    │   └── README.md
+    ├── multi_repo/                           # Multi-repository tests
+    │   ├── modes/git_changed_cd_test_*_mode.sh
+    │   ├── navigation/git_changed_cd_test_*.sh
+    │   └── README.md
+    ├── error_handling/                       # Error condition tests
+    │   ├── validation/git_changed_cd_test_invalid_*.sh
+    │   ├── edge_cases/git_changed_cd_test_*.sh
+    │   └── README.md
+    └── ui/                                   # User interface tests
+        ├── aliases/git_changed_cd_test_aliases.sh
+        ├── help/git_changed_cd_test_help_message.sh
+        ├── input_validation/git_changed_cd_test_*.sh
+        └── README.md
 ```
 
 ## Testing
 The system includes comprehensive tests covering:
 - Original single-repository functionality
 - Repository registry management (add/remove)
-- Multi-repository navigation modes
+- Multi-repository navigation modes with distance ordering
+- Path distance calculation accuracy
 - Parameter validation and error handling
 - Edge cases and error conditions
+- User interface elements (aliases, help, input validation)
 
 Run tests with:
 ```bash
 git_changed_cd_test_suite
 ```
 
+### Test Categories
+- **Core functionality**: Basic navigation and change detection
+- **Registry management**: Adding, removing, and validating repositories
+- **Multi-repository navigation**: Distance-based ordering and cross-repo navigation
+- **Error handling**: Input validation and edge case management
+- **User interface**: Aliases, help system, and user interaction
+
 Note: Tests assume the system is already in use, so they validate functionality for existing users adding new repositories to their workflow.
+
+## Performance Considerations
+- **Distance calculation**: O(n) where n is the number of registered repositories
+- **Path parsing**: Efficient string operations using bash built-ins
+- **Repository validation**: Minimal git operations per repository
+- **Memory usage**: Registry stored in single environment variable
+- **Sorting overhead**: Negligible for typical repository counts (< 20)
