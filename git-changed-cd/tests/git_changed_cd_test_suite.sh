@@ -7,7 +7,7 @@ git_changed_cd_test_suite() {
   local saved_registry="${GIT_CHANGED_CD_REGISTERED_REPOS:-}"
 
   # Test function registry 📋
-  local test_functions=(
+local test_functions=(
     # Original tests
     "git_changed_cd_test_not_in_git_repo"
     "git_changed_cd_test_clean_repo"
@@ -31,6 +31,13 @@ git_changed_cd_test_suite() {
     "git_changed_cd_test_remove_repo_no_parameter"
     "git_changed_cd_test_invalid_parameter"
     "git_changed_cd_test_registry_functions"
+    # Registry list tests
+    "git_changed_cd_test_list_repos_empty"
+    "git_changed_cd_test_list_repos_single"
+    "git_changed_cd_test_list_repos_multiple"
+    "git_changed_cd_test_list_repos_help"
+    "git_changed_cd_test_list_repos_invalid_parameter"
+    "git_changed_cd_test_list_repos_alias"
     # Multi-repo functionality tests
     "git_changed_cd_test_just_registered_directories"
     "git_changed_cd_test_all_mode"
@@ -45,7 +52,7 @@ git_changed_cd_test_suite() {
     "git_changed_cd_test_distance_ordering"
     "git_changed_cd_test_all_mode_distance_ordering"
   )
-
+  
   local ignored_tests=() # 🚫 No tests to skip
 
   # Run tests with bashTestRunner 🚀
