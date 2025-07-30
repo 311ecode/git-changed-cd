@@ -178,36 +178,27 @@ $all_files"
 
     # We need to popd *first* to get back to the original directory,
     # then cd to the target directory using its absolute path.
-    local target_dir_abs="$repo_root/$selected_dir_rel"
-    git-changed-cd-debug "Initial target path: '$target_dir_abs'"
-
-    # 'cd' handles '.' correctly, but canonicalizing is cleaner
+    local target_dir_abs
     if [[ $selected_dir_rel == "." ]]; then
       target_dir_abs="$repo_root"
-      git-changed-cd-debug "Handling root directory case"
+      git-changed-cd-debug "Handling root directory case: '$target_dir_abs'"
     else
-      # Use cd and pwd to resolve the absolute path robustly
-      git-changed-cd-debug "Resolving absolute path for '$repo_root/$selected_dir_rel'"
-      target_dir_abs=$(cd "$repo_root/$selected_dir_rel" && pwd -P) # Use -P for physical path
-      if [[ -z $target_dir_abs ]]; then
-        git-changed-cd-debug "Failed to resolve path for '$selected_dir_rel'"
-        echo "Error: Could not resolve path for '$selected_dir_rel'." >&2
-        popd >/dev/null
-        return 1
-      fi
+      target_dir_abs="$repo_root/$selected_dir_rel"
+      git-changed-cd-debug "Computed target path: '$target_dir_abs'"
     fi
-    git-changed-cd-debug "Final target path: '$target_dir_abs'"
 
     popd >/dev/null # Return to original directory *before* final cd
 
-    if [[ -d $target_dir_abs ]]; then
-      git-changed-cd-debug "Changing to target directory..."
+    if [[ -d "$target_dir_abs" ]]; then
+      git-changed-cd-debug "Changing to target directory: '$target_dir_abs'"
       echo "Changing directory to: $target_dir_abs"
       cd "$target_dir_abs" || {
         git-changed-cd-debug "Failed to cd into '$target_dir_abs'"
         echo "Error: Failed to cd into '$target_dir_abs'." >&2
         return 1
-      } # Use the absolute path
+      }
+      git-changed-cd-debug "Successfully changed directory"
+      return 0
     else
       git-changed-cd-debug "Target directory doesn't exist: '$target_dir_abs'"
       echo "Error: Selected directory '$target_dir_abs' seems to not exist." >&2
@@ -219,8 +210,6 @@ $all_files"
     popd >/dev/null # Return to original directory
     return 1
   fi
-
-  git-changed-cd-debug "Successfully changed directory"
 }
 
 # Define the alias
