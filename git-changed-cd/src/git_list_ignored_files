@@ -1,7 +1,10 @@
 #!/bin/bash
+
 git_list_ignored_files() {
     local target_path="$1"
     local git_root
+    local cache_dir="/tmp/git_ignored_cache"
+    local cache_ttl=$((23 * 3600)) # 23 hours in seconds
 
     if [[ ! -e "$target_path" ]]; then
         echo "Error: '$target_path' does not exist." >&2
@@ -23,27 +26,54 @@ git_list_ignored_files() {
         git_root=$(git -C "$(dirname "$target_path")" rev-parse \
           --show-toplevel 2>/dev/null)
     fi
-
     if [[ -z "$git_root" ]]; then
         echo "Error: '$target_path' is not part of a Git repository." >&2
         return 1
     fi
     echo "Debug: Git repository root=$git_root" >&2
 
+    # Create cache directory if it doesn't exist
+    mkdir -p "$cache_dir" 2>/dev/null
+
+    # Generate a unique cache file name based on git_root (hash to avoid path issues)
+    local cache_file="$cache_dir/$(echo -n "$git_root" | md5sum | cut -d' ' -f1).cache"
+    echo "Debug: Cache file=$cache_file" >&2
+
+    # Check if cache exists and is within TTL
+    if [[ -f "$cache_file" ]]; then
+        local current_time=$(date +%s)
+        local file_time=$(stat -c %Y "$cache_file" 2>/dev/null \
+          || stat -f %m "$cache_file" 2>/dev/null)
+        local age=$((current_time - file_time))
+        echo "Debug: Cache age=$age seconds, TTL=$cache_ttl seconds" >&2
+        if [[ $age -lt $cache_ttl ]]; then
+            echo "Debug: Using cached ignored items" >&2
+            cat "$cache_file"
+            return 0
+        else
+            echo "Debug: Cache expired, refreshing" >&2
+        fi
+    else
+        echo "Debug: No cache found, generating new cache" >&2
+    fi
+
     local ignored_items
     ignored_items=$(git -C "$git_root" status --porcelain --ignored \
       2>/dev/null | grep '^!!' | cut -c4-)
     if [[ -z "$ignored_items" ]]; then
         echo "Debug: No ignored items found in the repository." >&2
+        # Cache empty result
+        echo "" > "$cache_file" 2>/dev/null
         return 0
     fi
     echo "Debug: Found ignored items: $ignored_items" >&2
 
+    # Store results in a temporary file before caching
+    local temp_file=$(mktemp)
     while IFS= read -r item; do
         [[ -z "$item" ]] && continue
         local full_path="$git_root/$item"
         echo "Debug: Processing item=$full_path" >&2
-
         if [[ -d "$full_path" ]]; then
             find "$full_path" -type f \
               -exec realpath {} \; 2>/dev/null \
@@ -53,7 +83,14 @@ git_list_ignored_files() {
             realpath "$full_path" 2>/dev/null \
               || readlink -f "$full_path" 2>/dev/null
         fi
-    done <<< "$ignored_items"
+    done <<< "$ignored_items" > "$temp_file"
+
+    # Update cache with results
+    mv "$temp_file" "$cache_file" 2>/dev/null
+    echo "Debug: Cache updated at $cache_file" >&2
+
+    # Output the results
+    cat "$cache_file"
 }
 
 # Run only if not sourced
