@@ -1,1 +1,1 @@
-addPath "$(getScriptDir)"
+addPath "$(getScriptDir)/src"
