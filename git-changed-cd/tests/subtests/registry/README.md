@@ -6,7 +6,7 @@ Tests for repository registry functionality:
 - Repository addition success and error cases
 - Duplicate handling and validation
 
-## Remove Operations (`remove/`)  
+## Remove Operations (`remove/`)
 - Repository removal success and error cases
 - Non-existent repository handling
 

@@ -52,7 +52,7 @@ local test_functions=(
     "git_changed_cd_test_distance_ordering"
     "git_changed_cd_test_all_mode_distance_ordering"
   )
-  
+
   local ignored_tests=() # 🚫 No tests to skip
 
   # Run tests with bashTestRunner 🚀
@@ -66,13 +66,13 @@ local test_functions=(
   else
     unset DEBUG
   fi
-  
+
   if [[ -n $saved_registry ]]; then
     export GIT_CHANGED_CD_REGISTERED_REPOS="$saved_registry"
   else
     unset GIT_CHANGED_CD_REGISTERED_REPOS
   fi
-  
+
   cd "$saved_pwd" || return 1
 
   return $result # 🎉 Done!

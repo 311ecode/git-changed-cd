@@ -8,15 +8,15 @@ git_changed_cd_test_list_repos_alias() {
     return 1
   }
   git init -b main >/dev/null
-  
+
   # Clear registry and add repo
   unset GIT_CHANGED_CD_REGISTERED_REPOS
   git-changed-cd-add-repo "$repo_dir" >/dev/null 2>&1
-  
+
   local temp_output=$(mktemp)
   gcd-list >"$temp_output" 2>&1
   local result=$?
-  
+
   if [[ $result -ne 0 ]] || ! grep -q "Registered repositories (1):" "$temp_output" || ! grep -q "1: $repo_dir" "$temp_output"; then
     echo "❌ ERROR: gcd-list alias didn't work correctly, got exit code $result"
     cat "$temp_output"
@@ -24,7 +24,7 @@ git_changed_cd_test_list_repos_alias() {
     cd "$saved_pwd" || return 1
     return 1
   fi
-  
+
   rm -f "$temp_output"
   cd "$saved_pwd" || return 1
   echo "✅ SUCCESS: gcd-list alias works correctly"

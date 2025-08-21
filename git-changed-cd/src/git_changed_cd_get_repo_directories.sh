@@ -2,9 +2,9 @@
 
 git_changed_cd_get_repo_directories() {
   local repo_root="$1"
-  
+
   git_changed_cd_debug "Getting directories for repository: $repo_root"
-  
+
   # Use pushd/popd for reliable directory navigation within the function
   git_changed_cd_debug "Attempting to pushd to repo root..."
   pushd "$repo_root" >/dev/null || {

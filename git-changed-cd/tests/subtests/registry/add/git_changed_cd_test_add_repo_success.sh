@@ -8,14 +8,14 @@ git_changed_cd_test_add_repo_success() {
     return 1
   }
   git init -b main >/dev/null
-  
+
   # Clear any existing registry
   unset GIT_CHANGED_CD_REGISTERED_REPOS
-  
+
   local temp_output=$(mktemp)
   git-changed-cd-add-repo "$repo_dir" >"$temp_output" 2>&1
   local result=$?
-  
+
   if [[ $result -ne 0 ]] || ! grep -q "Added repository: $repo_dir" "$temp_output" || [[ -z "${GIT_CHANGED_CD_REGISTERED_REPOS:-}" ]]; then
     echo "❌ ERROR: Expected exit code 0, success message, and registry to be set, got exit code $result"
     cat "$temp_output"
@@ -23,7 +23,7 @@ git_changed_cd_test_add_repo_success() {
     cd "$saved_pwd" || return 1
     return 1
   fi
-  
+
   rm -f "$temp_output"
   cd "$saved_pwd" || return 1
   echo "✅ SUCCESS: Successfully added repository to registry"

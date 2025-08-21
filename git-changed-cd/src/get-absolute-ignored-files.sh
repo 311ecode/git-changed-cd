@@ -62,7 +62,7 @@ function get-absolute-ignored-files {
   while IFS= read -r item; do
     [[ -z "$item" ]] && continue
     local full_path="$git_root/$item"
-    
+
     if [[ -n "$DEBUG" ]]; then
       echo "Debug: Processing item=$full_path" >&2
     fi

@@ -26,28 +26,28 @@ git-changed-cd-list-repos() {
   done
 
   git_changed_cd_debug "Listing registered repositories"
-  
+
   # Initialize registry if needed
   git_changed_cd_registry_init
-  
+
   # Get count of registered repositories
   local registry_count=$(git_changed_cd_registry_count)
-  
+
   if [[ $registry_count -eq 0 ]]; then
     echo "No registered repositories found."
     echo "Use 'git-changed-cd-add-repo <path>' to register repositories."
     return 0
   fi
-  
+
   echo "Registered repositories ($registry_count):"
-  
+
   # Get all repositories and display them
   local index=1
   while IFS= read -r repo; do
     echo "$index: $repo"
     ((index++))
   done < <(git_changed_cd_registry_get_repos)
-  
+
   return 0
 }
 

@@ -6,7 +6,7 @@ Tests for user interaction and interface:
 - Help message display
 - Usage information
 
-## Aliases (`aliases/`)  
+## Aliases (`aliases/`)
 - Command aliases (gcd, gcdj, gcda)
 - Alias functionality verification
 
