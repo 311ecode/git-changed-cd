@@ -7,7 +7,7 @@ git_changed_cd_test_debug_mode() {
   }
   git init -b main >/dev/null
   touch file.txt
-  export DEBUG=1
+  # export DEBUG=1
   local temp_output=$(mktemp)
   git-changed-cd < <(echo "0") >"$temp_output" 2>&1
   local result=$?
