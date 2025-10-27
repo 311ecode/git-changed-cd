@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+#
+# Loader for git-changed-cd (gcd) and related utilities.
+# Source this file to make the functions available in your Bash shell:
+#
+#   source /path/to/git-changed-cd-loader
+#
+# Or add it to your .bashrc:
+#
+#   echo "source /path/to/git-changed-cd-loader" >> ~/.bashrc
+#
+
+# Determine the directory where this script is located
+# This ensures that relative paths work correctly when sourced in Bash.
+if [ -n "$BASH_VERSION" ]; then
+    # Running in bash
+    SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+else
+    echo "Error: git-changed-cd-loader is designed for Bash." >&2
+    echo "Please source this file from your .bashrc" >&2
+    return 1
+fi
+
+# Attempt to resolve to an absolute path
+# (cd ... && pwd) is a portable way to do this
+_GCD_LOADER_DIR=$(cd "$SCRIPT_DIR" >/dev/null 2>&1 && pwd) || {
+    echo "Error: Could not determine absolute path for git-changed-cd-loader." >&2
+    return 1
+}
+
+# Define the source directory relative to this loader
+_GCD_SRC_DIR="$_GCD_LOADER_DIR/src"
+
+# --- Load Core Functions ---
+# Order matters: load helpers first, then main functions.
+
+# Debugging utility
+source "$_GCD_SRC_DIR/git_changed_cd_debug.sh"
+
+# Registry management helpers
+source "$_GCD_SRC_DIR/git_changed_cd_registry.sh"
+
+# Directory scanning helper
+# This file includes its own helper: git_changed_cd_add_dir_and_parents_local
+source "$_GCD_SRC_DIR/git_changed_cd_get_repo_directories.sh"
+
+# --- Load Main Functions ---
+
+# git-changed-cd (gcd, gcdj, gcda)
+source "$_GCD_SRC_DIR/git-changed-cd.sh"
+
+# git-changed-cd-add-repo (gcd-add)
+source "$_GCD_SRC_DIR/git-changed-cd-add-repo.sh"
+
+# git-changed-cd-remove-repo (gcd-remove)
+source "$_GCD_SRC_DIR/git-changed-cd-remove-repo.sh"
+
+# git-changed-cd-list-repos (gcd-list)
+source "$_GCD_SRC_DIR/git-changed-cd-list-repos.sh"
+
+# --- Load Bonus Utilities ---
+
+# get-absolute-ignored-files
+source "$_GCD_SRC_DIR/get-absolute-ignored-files.sh"
+
+# --- Warning for Missing Functionality ---
+# Check if the required distance sorting function is available.
+# This function is called by git-changed-cd.sh but was not
+# provided in the file list.
+if ! command -v git_changed_cd_sort_repos_by_distance >/dev/null 2>&1; then
+    git_changed_cd_debug "WARNING: Function 'git_changed_cd_sort_repos_by_distance' not found."
+    git_changed_cd_debug "Distance-based sorting in 'gcdj' and 'gcda' modes will fail."
+    git_changed_cd_debug "This function is expected to be in a file like 'src/git_changed_cd_path_distance.sh'."
+fi
+
+# Clean up temporary variables
+unset _GCD_LOADER_DIR
+unset _GCD_SRC_DIR
