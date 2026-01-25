@@ -16,7 +16,7 @@ git_changed_cd_test_add_repo_success() {
   git-changed-cd-add-repo "$repo_dir" >"$temp_output" 2>&1
   local result=$?
 
-  if [[ $result -ne 0 ]] || ! grep -q "Added repository: $repo_dir" "$temp_output" || [[ -z "${GIT_CHANGED_CD_REGISTERED_REPOS:-}" ]]; then
+  if [[ $result -ne 0 ]] || ! grep -q "Added repository: $repo_dir" "$temp_output" || [[ -z ${GIT_CHANGED_CD_REGISTERED_REPOS:-} ]]; then
     echo "❌ ERROR: Expected exit code 0, success message, and registry to be set, got exit code $result"
     cat "$temp_output"
     rm -f "$temp_output"

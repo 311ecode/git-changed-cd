@@ -5,14 +5,14 @@ git-changed-cd-add-repo() {
   local repo_path="$1"
 
   # Check if path parameter was provided
-  if [[ -z "$repo_path" ]]; then
+  if [[ -z $repo_path ]]; then
     echo "Error: Repository path is required." >&2
     echo "Usage: git-changed-cd-add-repo <path>" >&2
     return 1
   fi
 
   # Check if directory exists
-  if [[ ! -d "$repo_path" ]]; then
+  if [[ ! -d $repo_path ]]; then
     echo "Error: Directory '$repo_path' does not exist." >&2
     return 1
   fi

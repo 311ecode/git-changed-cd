@@ -8,13 +8,13 @@ git_changed_cd_test_all_mode() {
   mkdir -p "$repo1_dir"
   cd "$repo1_dir" || return 1
   git init -b main >/dev/null
-  echo "test1" > file1.txt
+  echo "test1" >file1.txt
 
   # Create current repo
   mkdir -p "$current_repo"
   cd "$current_repo" || return 1
   git init -b main >/dev/null
-  echo "current" > current.txt
+  echo "current" >current.txt
 
   # Clear registry and add repo1
   unset GIT_CHANGED_CD_REGISTERED_REPOS
@@ -24,7 +24,7 @@ git_changed_cd_test_all_mode() {
   git-changed-cd --all < <(echo "0") >"$temp_output" 2>&1
   local result=$?
 
-  if [[ $result -ne 0 ]] || ! grep -q "\\[repo1\\]" "$temp_output" || ! grep -q "\\[current\\]" "$temp_output"; then
+  if [[ $result -ne 0 ]] || ! grep -q '\[repo1\]' "$temp_output" || ! grep -q '\[current\]' "$temp_output"; then
     echo "❌ ERROR: Expected to see both current and registered repos, got exit code $result"
     cat "$temp_output"
     rm -f "$temp_output"

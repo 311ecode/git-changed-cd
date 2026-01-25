@@ -8,14 +8,14 @@ git_changed_cd_test_sequential_numbering() {
   mkdir -p "$repo1_dir/src/utils" "$repo1_dir/tests"
   cd "$repo1_dir" || return 1
   git init -b main >/dev/null
-  echo "test1" > src/utils/file1.txt
-  echo "test2" > tests/file2.txt
+  echo "test1" >src/utils/file1.txt
+  echo "test2" >tests/file2.txt
 
   mkdir -p "$repo2_dir/docs" "$repo2_dir/examples"
   cd "$repo2_dir" || return 1
   git init -b main >/dev/null
-  echo "test3" > docs/file3.txt
-  echo "test4" > examples/file4.txt
+  echo "test3" >docs/file3.txt
+  echo "test4" >examples/file4.txt
 
   # Clear registry and add both repos
   unset GIT_CHANGED_CD_REGISTERED_REPOS

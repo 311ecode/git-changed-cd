@@ -7,7 +7,7 @@ git_changed_cd_test_suite() {
   local saved_registry="${GIT_CHANGED_CD_REGISTERED_REPOS:-}"
 
   # Test function registry 📋
-local test_functions=(
+  local test_functions=(
     # Original tests
     "git_changed_cd_test_not_in_git_repo"
     "git_changed_cd_test_clean_repo"

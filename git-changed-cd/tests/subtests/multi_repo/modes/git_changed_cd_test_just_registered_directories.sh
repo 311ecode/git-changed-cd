@@ -10,12 +10,12 @@ git_changed_cd_test_just_registered_directories() {
   cd "$repo1_dir" || return 1
   git init -b main >/dev/null
   mkdir src
-  echo "test1" > src/file1.txt
+  echo "test1" >src/file1.txt
 
   cd "$repo2_dir" || return 1
   git init -b main >/dev/null
   mkdir tests
-  echo "test2" > tests/file2.txt
+  echo "test2" >tests/file2.txt
 
   # Clear registry and add both repos
   unset GIT_CHANGED_CD_REGISTERED_REPOS
@@ -27,13 +27,13 @@ git_changed_cd_test_just_registered_directories() {
   mkdir -p "$current_repo"
   cd "$current_repo" || return 1
   git init -b main >/dev/null
-  echo "current" > current.txt
+  echo "current" >current.txt
 
   local temp_output=$(mktemp)
   git-changed-cd --justRegisteredDirectories < <(echo "0") >"$temp_output" 2>&1
   local result=$?
 
-  if [[ $result -ne 0 ]] || ! grep -q "\\[repo1\\]" "$temp_output" || ! grep -q "\\[repo2\\]" "$temp_output" || grep -q "current" "$temp_output"; then
+  if [[ $result -ne 0 ]] || ! grep -q '\[repo1\]' "$temp_output" || ! grep -q '\[repo2\]' "$temp_output" || grep -q "current" "$temp_output"; then
     echo "❌ ERROR: Expected to see registered repos but not current repo, got exit code $result"
     cat "$temp_output"
     rm -f "$temp_output"

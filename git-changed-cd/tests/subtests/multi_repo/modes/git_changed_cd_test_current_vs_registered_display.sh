@@ -9,11 +9,11 @@ git_changed_cd_test_current_vs_registered_display() {
 
   cd "$repo1" || return 1
   git init -b main >/dev/null
-  echo "repo1" > src/utils/file1.txt
+  echo "repo1" >src/utils/file1.txt
 
   cd "$repo2" || return 1
   git init -b main >/dev/null
-  echo "repo2" > src/utils/file2.txt
+  echo "repo2" >src/utils/file2.txt
 
   # Clear registry and add repo1
   unset GIT_CHANGED_CD_REGISTERED_REPOS
@@ -35,7 +35,7 @@ git_changed_cd_test_current_vs_registered_display() {
   local result3=$?
 
   # Verify current mode shows repo2 without prefix
-  if [[ $result1 -ne 0 ]] || grep -q "\\[repo2\\]" "$temp_output1" || ! grep -q "src/utils" "$temp_output1"; then
+  if [[ $result1 -ne 0 ]] || grep -q '\[repo2\]' "$temp_output1" || ! grep -q "src/utils" "$temp_output1"; then
     echo "❌ ERROR: Current mode should show repo2 without prefix"
     echo "=== Current mode output ==="
     cat "$temp_output1"
@@ -45,7 +45,7 @@ git_changed_cd_test_current_vs_registered_display() {
   fi
 
   # Verify registered mode shows repo1 with prefix
-  if [[ $result2 -ne 0 ]] || ! grep -q "\\[repo1\\]" "$temp_output2" || grep -q "repo2" "$temp_output2"; then
+  if [[ $result2 -ne 0 ]] || ! grep -q '\[repo1\]' "$temp_output2" || grep -q "repo2" "$temp_output2"; then
     echo "❌ ERROR: Registered mode should show repo1 with prefix, not repo2"
     echo "=== Registered mode output ==="
     cat "$temp_output2"
@@ -55,7 +55,7 @@ git_changed_cd_test_current_vs_registered_display() {
   fi
 
   # Verify all mode shows both repos with prefixes
-  if [[ $result3 -ne 0 ]] || ! grep -q "\\[repo1\\]" "$temp_output3" || ! grep -q "\\[repo2\\]" "$temp_output3"; then
+  if [[ $result3 -ne 0 ]] || ! grep -q '\[repo1\]' "$temp_output3" || ! grep -q '\[repo2\]' "$temp_output3"; then
     echo "❌ ERROR: All mode should show both repos with prefixes"
     echo "=== All mode output ==="
     cat "$temp_output3"

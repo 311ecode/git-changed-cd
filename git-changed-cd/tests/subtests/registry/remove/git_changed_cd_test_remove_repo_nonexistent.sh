@@ -9,7 +9,7 @@ git_changed_cd_test_remove_repo_nonexistent() {
   git-changed-cd-remove-repo "$nonexistent_path" >"$temp_output" 2>&1
   local result=$?
 
-  if [[ $result -ne 0 ]] || ! grep -q "Removed repository: $nonexistent_path" "$temp_output" || [[ -n "${GIT_CHANGED_CD_REGISTERED_REPOS:-}" ]]; then
+  if [[ $result -ne 0 ]] || ! grep -q "Removed repository: $nonexistent_path" "$temp_output" || [[ -n ${GIT_CHANGED_CD_REGISTERED_REPOS:-} ]]; then
     echo "❌ ERROR: Expected exit code 0, success message, and empty registry, got exit code $result"
     cat "$temp_output"
     rm -f "$temp_output"

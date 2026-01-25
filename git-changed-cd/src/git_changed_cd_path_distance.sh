@@ -16,15 +16,15 @@ git_changed_cd_calculate_path_distance() {
   abs_current="$current_path"
 
   # Split paths into components
-  IFS='/' read -ra target_parts <<< "$abs_target"
-  IFS='/' read -ra current_parts <<< "$abs_current"
+  IFS='/' read -ra target_parts <<<"$abs_target"
+  IFS='/' read -ra current_parts <<<"$abs_current"
 
   # Find common prefix length
   local common_length=0
   local min_length=$((${#target_parts[@]} < ${#current_parts[@]} ? ${#target_parts[@]} : ${#current_parts[@]}))
 
-  for ((i=0; i<min_length; i++)); do
-    if [[ "${target_parts[i]}" == "${current_parts[i]}" ]]; then
+  for ((i = 0; i < min_length; i++)); do
+    if [[ ${target_parts[i]} == "${current_parts[i]}" ]]; then
       ((common_length++))
     else
       break

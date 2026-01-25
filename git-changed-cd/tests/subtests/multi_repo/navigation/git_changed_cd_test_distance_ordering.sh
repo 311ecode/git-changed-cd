@@ -11,17 +11,17 @@ git_changed_cd_test_distance_ordering() {
   # Close repo (1 level up)
   cd "$close_repo" || return 1
   git init -b main >/dev/null
-  echo "close" > close_file.txt
+  echo "close" >close_file.txt
 
   # Far repo (3 levels up)
   cd "$far_repo" || return 1
   git init -b main >/dev/null
-  echo "far" > far_file.txt
+  echo "far" >far_file.txt
 
   # Current working directory
   cd "$current_dir" || return 1
   git init -b main >/dev/null
-  echo "current" > current_file.txt
+  echo "current" >current_file.txt
 
   # Clear registry and add repos in reverse distance order (far first, then close)
   unset GIT_CHANGED_CD_REGISTERED_REPOS
@@ -42,10 +42,10 @@ git_changed_cd_test_distance_ordering() {
   fi
 
   # Check that close repo appears before far repo in the output
-  local close_line=$(grep -n "\\[close\\]" "$temp_output" | cut -d: -f1)
-  local far_line=$(grep -n "\\[away\\]" "$temp_output" | cut -d: -f1)
+  local close_line=$(grep -n '\[close\]' "$temp_output" | cut -d: -f1)
+  local far_line=$(grep -n '\[away\]' "$temp_output" | cut -d: -f1)
 
-  if [[ -z "$close_line" ]] || [[ -z "$far_line" ]]; then
+  if [[ -z $close_line ]] || [[ -z $far_line ]]; then
     echo "❌ ERROR: Could not find both repositories in output"
     cat "$temp_output"
     rm -f "$temp_output"

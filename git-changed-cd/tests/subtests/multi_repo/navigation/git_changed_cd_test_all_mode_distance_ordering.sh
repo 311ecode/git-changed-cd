@@ -11,17 +11,17 @@ git_changed_cd_test_all_mode_distance_ordering() {
   # Registered close repo
   cd "$registered_close" || return 1
   git init -b main >/dev/null
-  echo "reg_close" > file.txt
+  echo "reg_close" >file.txt
 
   # Registered far repo
   cd "$registered_far" || return 1
   git init -b main >/dev/null
-  echo "reg_far" > file.txt
+  echo "reg_far" >file.txt
 
   # Current repo (middle distance)
   cd "$current_middle" || return 1
   git init -b main >/dev/null
-  echo "current" > file.txt
+  echo "current" >file.txt
 
   # Register repos in reverse distance order (far first)
   unset GIT_CHANGED_CD_REGISTERED_REPOS
@@ -42,11 +42,11 @@ git_changed_cd_test_all_mode_distance_ordering() {
   fi
 
   # Extract line numbers for each repository
-  local current_line=$(grep -n "\\[current\\]" "$temp_output" | head -1 | cut -d: -f1)
-  local close_line=$(grep -n "\\[reg_close\\]" "$temp_output" | head -1 | cut -d: -f1)
-  local far_line=$(grep -n "\\[reg_far\\]" "$temp_output" | head -1 | cut -d: -f1)
+  local current_line=$(grep -n '\[current\]' "$temp_output" | head -1 | cut -d: -f1)
+  local close_line=$(grep -n '\[reg_close\]' "$temp_output" | head -1 | cut -d: -f1)
+  local far_line=$(grep -n '\[reg_far\]' "$temp_output" | head -1 | cut -d: -f1)
 
-  if [[ -z "$current_line" ]] || [[ -z "$close_line" ]] || [[ -z "$far_line" ]]; then
+  if [[ -z $current_line ]] || [[ -z $close_line ]] || [[ -z $far_line ]]; then
     echo "❌ ERROR: Could not find all repositories in output"
     echo "Current line: $current_line, Close line: $close_line, Far line: $far_line"
     cat "$temp_output"

@@ -5,7 +5,7 @@ git-changed-cd-remove-repo() {
   local repo_path="$1"
 
   # Check if path parameter was provided
-  if [[ -z "$repo_path" ]]; then
+  if [[ -z $repo_path ]]; then
     echo "Error: Repository path is required." >&2
     echo "Usage: git-changed-cd-remove-repo <path>" >&2
     return 1
@@ -13,7 +13,7 @@ git-changed-cd-remove-repo() {
 
   # Get absolute path if directory exists, otherwise use as-is
   local abs_path
-  if [[ -d "$repo_path" ]]; then
+  if [[ -d $repo_path ]]; then
     abs_path=$(cd "$repo_path" && pwd) || {
       echo "Error: Failed to resolve absolute path for '$repo_path'." >&2
       return 1

@@ -8,13 +8,13 @@ git_changed_cd_test_current_repo_display() {
   mkdir -p "$registered_repo"
   cd "$registered_repo" || return 1
   git init -b main >/dev/null
-  echo "registered" > registered_file.txt
+  echo "registered" >registered_file.txt
 
   # Create current repo (not registered)
   mkdir -p "$current_repo/src/utils"
   cd "$current_repo" || return 1
   git init -b main >/dev/null
-  echo "current" > src/utils/current_file.txt
+  echo "current" >src/utils/current_file.txt
 
   # Clear registry and add only the registered repo
   unset GIT_CHANGED_CD_REGISTERED_REPOS
@@ -35,7 +35,7 @@ git_changed_cd_test_current_repo_display() {
   fi
 
   # Should NOT show [current_unregistered] prefix since it's current mode
-  if grep -q "\\[current_unregistered\\]" "$temp_output"; then
+  if grep -q '\[current_unregistered\]' "$temp_output"; then
     echo "❌ ERROR: Should not show repo name prefix in current mode"
     cat "$temp_output"
     rm -f "$temp_output"

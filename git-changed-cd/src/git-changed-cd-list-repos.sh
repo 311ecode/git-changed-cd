@@ -5,23 +5,23 @@ git-changed-cd-list-repos() {
   # Parse arguments
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -h|--help)
-        echo "Usage: git-changed-cd-list-repos [OPTIONS]"
-        echo ""
-        echo "List all registered repositories."
-        echo ""
-        echo "OPTIONS:"
-        echo "  -h, --help    Show this help message"
-        echo ""
-        echo "ALIASES:"
-        echo "  gcd-list     - git-changed-cd-list-repos"
-        return 0
-        ;;
-      *)
-        echo "Error: Unknown option '$1'" >&2
-        echo "Use 'git-changed-cd-list-repos --help' for usage information." >&2
-        return 1
-        ;;
+    -h | --help)
+      echo "Usage: git-changed-cd-list-repos [OPTIONS]"
+      echo ""
+      echo "List all registered repositories."
+      echo ""
+      echo "OPTIONS:"
+      echo "  -h, --help    Show this help message"
+      echo ""
+      echo "ALIASES:"
+      echo "  gcd-list     - git-changed-cd-list-repos"
+      return 0
+      ;;
+    *)
+      echo "Error: Unknown option '$1'" >&2
+      echo "Use 'git-changed-cd-list-repos --help' for usage information." >&2
+      return 1
+      ;;
     esac
   done
 

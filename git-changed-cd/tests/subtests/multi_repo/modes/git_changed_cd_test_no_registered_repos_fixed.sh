@@ -16,7 +16,7 @@ git_changed_cd_test_no_registered_repos() {
   local result=$?
 
   # Restore registry state
-  if [[ -n "$saved_registry" ]]; then
+  if [[ -n $saved_registry ]]; then
     export GIT_CHANGED_CD_REGISTERED_REPOS="$saved_registry"
   else
     unset GIT_CHANGED_CD_REGISTERED_REPOS
